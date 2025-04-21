@@ -27,6 +27,18 @@ async stopServer() : Promise<null> {
 },
 async listOllamaModels() : Promise<string[]> {
     return await TAURI_INVOKE("plugin:local-llm|list_ollama_models");
+	},
+	async listAvailableGgufModels(): Promise<string[]> {
+		return await TAURI_INVOKE("plugin:local-llm|list_available_gguf_models")
+	},
+	async getActiveModelPath(): Promise<string> {
+		return await TAURI_INVOKE("plugin:local-llm|get_active_model_path")
+	},
+	async setCustomModelPath(path: string | null): Promise<null> {
+		return await TAURI_INVOKE("plugin:local-llm|set_custom_model_path", { path })
+	},
+	async selectModelFile(): Promise<string | null> {
+		return await TAURI_INVOKE("plugin:local-llm|select_model_file")
 }
 }
 

@@ -30,14 +30,23 @@ impl<R: Runtime, T: Manager<R>> LocalLlmPluginExt<R> for T {
 
     #[tracing::instrument(skip_all)]
     async fn is_model_downloaded(&self) -> Result<bool, crate::Error> {
-        let path = self.path().app_data_dir().unwrap().join("llm.gguf");
+        let state = self.state::<crate::SharedState>();
+        let s = state.lock().await;
+        let model_path = s.get_active_model_path();
 
-        if !path.exists() {
+        if !model_path.exists() {
             return Ok(false);
         }
 
-        let size = hypr_file::file_size(&path)?;
-        Ok(size == 2019377440)
+        // We only check the exact size for the default model
+        if model_path == s.model_path {
+            let size = hypr_file::file_size(&model_path)?;
+            return Ok(size == 2019377440);
+        }
+
+        // For custom models, just check that the file exists and has some content
+        let size = hypr_file::file_size(&model_path)?;
+        Ok(size > 0)
     }
 
     #[tracing::instrument(skip_all)]
@@ -90,7 +99,7 @@ impl<R: Runtime, T: Manager<R>> LocalLlmPluginExt<R> for T {
 
         let model_manager = {
             let s = state.lock().await;
-            crate::ModelManager::new(s.model_path.clone())
+            crate::ModelManager::new(s.get_active_model_path())
         };
 
         let server = crate::server::run_server(model_manager).await?;

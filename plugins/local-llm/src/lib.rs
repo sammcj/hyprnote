@@ -20,6 +20,7 @@ pub struct State {
     pub api_base: Option<String>,
     pub server: Option<crate::server::ServerHandle>,
     pub model_path: std::path::PathBuf,
+    pub custom_model_path: Option<std::path::PathBuf>,
     pub download_task: Option<tokio::task::JoinHandle<()>>,
 }
 
@@ -29,8 +30,13 @@ impl State {
             api_base: None,
             server: None,
             model_path,
+            custom_model_path: None,
             download_task: None,
         }
+    }
+
+    pub fn get_active_model_path(&self) -> std::path::PathBuf {
+        self.custom_model_path.clone().unwrap_or_else(|| self.model_path.clone())
     }
 }
 
@@ -45,6 +51,10 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::start_server::<Wry>,
             commands::stop_server::<Wry>,
             commands::list_ollama_models::<Wry>,
+            commands::list_available_gguf_models::<Wry>,
+            commands::get_active_model_path::<Wry>,
+            commands::set_custom_model_path::<Wry>,
+            commands::select_model_file::<Wry>,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Throw)
 }
